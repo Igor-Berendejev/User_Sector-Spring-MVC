@@ -15,17 +15,22 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.context.ServletContextAware;
 import org.springframework.web.servlet.ModelAndView;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Paths;
 import java.util.Arrays;
 
 
 @Controller
-public class SectorController {
+public class SectorController implements ServletContextAware {
 
     @Autowired
     UserService userService;
@@ -37,6 +42,8 @@ public class SectorController {
     SectorService sectorService;
 
     private String name;
+
+    private static ServletContext servletContext;
 
     @RequestMapping(value = "/", method = RequestMethod.GET)
     public ModelAndView getStartPage() {
@@ -69,6 +76,7 @@ public class SectorController {
         String[] updatedSectors = request.getParameterValues("sectors");
 
         User user = userService.getUserByName(name);
+        name = updatedName;
         user.setName(updatedName);
         userService.saveUser(user);
 
@@ -87,7 +95,12 @@ public class SectorController {
     }
 
     private Document getRefilledPage(User user) throws IOException {
-        Document doc = Jsoup.connect("http://localhost:8080/HelmesTask_war_exploded/").get();
+        Document doc = null;
+        try {
+            doc = getStartPageDocument();
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+        }
         Element userName = doc.getElementById("name");
         userName.val(user.getName());
         Elements options = doc.select("#sectors>option");
@@ -105,4 +118,14 @@ public class SectorController {
         return doc;
     }
 
+    @Override
+    public void setServletContext(ServletContext servletContext) {
+        this.servletContext = servletContext;
+    }
+
+        public static Document getStartPageDocument() throws IOException, URISyntaxException {
+        URL startPageStream = servletContext.getResource("/WEB-INF/views/startPage.jsp");
+        File startPAge = Paths.get(startPageStream.toURI()).toFile();
+        return Jsoup.parse(startPAge);
+    }
 }
