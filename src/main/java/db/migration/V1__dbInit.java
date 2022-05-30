@@ -11,6 +11,7 @@ import org.springframework.jdbc.datasource.SingleConnectionDataSource;
 
 import java.io.File;
 import java.net.URL;
+import java.nio.file.Paths;
 
 public class V1__dbInit extends BaseJavaMigration {
     @Override
@@ -20,9 +21,9 @@ public class V1__dbInit extends BaseJavaMigration {
         template.execute("CREATE TABLE users (id SERIAL PRIMARY KEY, name varchar(30) NOT NULL UNIQUE, agreed_terms boolean);");
         template.execute("CREATE TABLE positions(id SERIAL PRIMARY KEY, user_id integer REFERENCES users(id), sector_id integer REFERENCES sector(id));");
         Document document = Jsoup.parse(new File("C:\\Users\\igor\\IdeaProjects\\HelmesTask\\src\\main\\webapp\\WEB-INF\\views\\startPage.jsp"));
-        Element sectors =  document.getElementById("sectors");
+        Element sectors = document.getElementById("sectors");
         Elements options = sectors.children();
-        for (Element e : options){
+        for (Element e : options) {
             String sector = e.text();
             String value = e.attr("value");
             template.update("INSERT INTO sector (id, name) VALUES (?, ?)", Integer.parseInt(value), sector);

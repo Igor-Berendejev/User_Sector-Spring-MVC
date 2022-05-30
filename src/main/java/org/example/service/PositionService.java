@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @Transactional
 public class PositionService {
@@ -15,5 +17,13 @@ public class PositionService {
 
     public Position addPosition(Position position){
         return positionRepository.save(position);
+    }
+
+    public List<Position> getPositionsByUserId(int userId){
+        return positionRepository.getPositionsByUserId(userId);
+    }
+
+    public int deletePositionsByUserId(int userId){
+        return positionRepository.deletePositionByUserId(userId);
     }
 }

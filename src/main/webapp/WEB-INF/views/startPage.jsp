@@ -1,11 +1,14 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <html lang="en">
-<head><meta http-equiv="Content-Type" content="text/html; charset=windows-1252"></head>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+    <title>Start Page</title>
+</head>
 <body>
 Please enter your name and pick the Sectors you are currently involved in.
 <br>
 <br>
-<form action="submitData" method="POST">
+<form action="submitData" method="POST" id="submitForm">
     <label for="name">Name:</label>
     <input type="text" id="name" name="name">
     <br>
@@ -100,7 +103,7 @@ Please enter your name and pick the Sectors you are currently involved in.
 
     <br>
     <br>
-    <input type="submit" value="Save">
+    <input type="submit" value="Save" id = "submitButton">
 </form>
 </body>
 </html>
