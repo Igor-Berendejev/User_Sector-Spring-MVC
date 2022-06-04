@@ -11,13 +11,15 @@
     </style>
 </head>
 <body>
-Your data has been submitted. Click Edit if you want to change the data.
+Your data has been submitted as follows:
 <br>
 <br>
 Name: ${name}
 <br>
-<br>
 Sectors: ${sectors}
+<br>
+<br>
+Submit new data and click Edit if you want to change the data.
 <br>
 <br>
 <form:form action="editData" method="POST" id="submitForm" modelAttribute="sectorForm">

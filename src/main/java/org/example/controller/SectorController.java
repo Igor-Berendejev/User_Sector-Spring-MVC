@@ -54,7 +54,7 @@ public class SectorController implements ServletContextAware {
     @RequestMapping(value = "/", method = RequestMethod.GET)
     public String getStartPage(Model model) {
 
-        Flyway flyway = Flyway.configure().dataSource("jdbc:postgresql://localhost:5432/user_sector", "postgres", "Everlast").load();
+        Flyway flyway = Flyway.configure().dataSource("jdbc:postgresql://localhost:5432/user_sector", "postgres", "postgres").load();
         flyway.migrate();
         model.addAttribute("sectorForm", new SectorForm());
 
@@ -62,9 +62,14 @@ public class SectorController implements ServletContextAware {
     }
 
     @RequestMapping(value = "/submitData", method = RequestMethod.POST)
-    public String submitData(@ModelAttribute("sectorForm") @Validated SectorForm sectorForm, BindingResult bindingResult, Model model){
+    public String submitData(@ModelAttribute("sectorForm") @Validated SectorForm sectorForm, BindingResult bindingResult, Model model) {
 
-        if(bindingResult.hasErrors()){
+        if (bindingResult.hasErrors()) {
+            return "index";
+        }
+
+        if (userService.getUserByName(sectorForm.getName()) != null) {
+            bindingResult.rejectValue("name", "duplicated.name", "User already exists");
             return "index";
         }
 
@@ -87,9 +92,9 @@ public class SectorController implements ServletContextAware {
     }
 
     @RequestMapping(value = "/editData", method = RequestMethod.POST)
-    public String editData(@ModelAttribute("sectorForm") @Validated SectorForm sectorForm, BindingResult bindingResult, Model model){
+    public String editData(@ModelAttribute("sectorForm") @Validated SectorForm sectorForm, BindingResult bindingResult, Model model) {
 
-        if(bindingResult.hasErrors()){
+        if (bindingResult.hasErrors()) {
             return "edit";
         }
 
@@ -119,7 +124,7 @@ public class SectorController implements ServletContextAware {
         this.servletContext = servletContext;
     }
 
-        public static Document getStartPageDocument() throws IOException, URISyntaxException {
+    public static Document getStartPageDocument() throws IOException, URISyntaxException {
         URL startPageStream = servletContext.getResource("/WEB-INF/views/index.jsp");
         File startPAge = Paths.get(startPageStream.toURI()).toFile();
         return Jsoup.parse(startPAge);

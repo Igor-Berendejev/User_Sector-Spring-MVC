@@ -15,6 +15,7 @@ Your data has been submitted as follows:
 <br>
 <br>
 Name: ${name}
+<br>
 Sectors: ${sectors}
 <br>
 <br>
