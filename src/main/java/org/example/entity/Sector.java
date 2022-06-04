@@ -8,7 +8,7 @@ public class Sector {
     @Id
     private int id;
     private String name;
-    private int base_sector_id;
+    private Integer base_sector_id;
 
     public Sector() {
     }

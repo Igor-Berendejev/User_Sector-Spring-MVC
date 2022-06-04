@@ -1,7 +1,8 @@
 package org.example.controller;
 
-
 import org.example.entity.Position;
+import org.example.entity.SectorForm;
+import org.example.entity.SectorFormValidator;
 import org.example.entity.User;
 import org.example.service.PositionService;
 import org.example.service.SectorService;
@@ -9,24 +10,27 @@ import org.example.service.UserService;
 import org.flywaydb.core.Flyway;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.Validator;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.WebDataBinder;
+import org.springframework.web.bind.annotation.InitBinder;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.context.ServletContextAware;
-import org.springframework.web.servlet.ModelAndView;
 
 import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Paths;
-import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 
 @Controller
@@ -41,81 +45,73 @@ public class SectorController implements ServletContextAware {
     @Autowired
     SectorService sectorService;
 
+    private Validator validator = new SectorFormValidator();
+
     private String name;
 
     private static ServletContext servletContext;
 
     @RequestMapping(value = "/", method = RequestMethod.GET)
-    public ModelAndView getStartPage() {
+    public String getStartPage(Model model) {
 
         Flyway flyway = Flyway.configure().dataSource("jdbc:postgresql://localhost:5432/user_sector", "postgres", "Everlast").load();
         flyway.migrate();
+        model.addAttribute("sectorForm", new SectorForm());
 
-        return new ModelAndView("startPage");
+        return "index";
     }
 
     @RequestMapping(value = "/submitData", method = RequestMethod.POST)
-    public void submitData(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        if (!validateSubmit(request)) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "All fields are mandatory");
-            return;
+    public String submitData(@ModelAttribute("sectorForm") @Validated SectorForm sectorForm, BindingResult bindingResult, Model model){
+
+        if(bindingResult.hasErrors()){
+            return "index";
         }
-        name = request.getParameter("name");
-        String[] sectors = request.getParameterValues("sectors");
+
+        name = sectorForm.getName();
+        List<String> sectorList = sectorForm.getSectors();
+
         User savedUser = userService.saveUser(new User(name, true));
-        Arrays.stream(sectors).forEach(sec -> positionService.addPosition(new Position(savedUser.getId(), Integer.parseInt(sec))));
+        sectorList.stream().forEach(sector -> positionService.addPosition(new Position(savedUser.getId(), Integer.parseInt(sector))));
 
-        Document refilledPage = getRefilledPage(savedUser);
+        model.addAttribute("name", savedUser.getName());
 
-        response.getWriter().println(refilledPage.html());
+        List<String> userSectors = positionService.getPositionsByUserId(savedUser.getId()).stream()
+                .map(position -> sectorService.getSectorNameById(position.getSectorId()))
+                .collect(Collectors.toList());
+        model.addAttribute("sectors", userSectors);
+
+        model.addAttribute("sectorForm", new SectorForm());
+
+        return "edit";
     }
 
     @RequestMapping(value = "/editData", method = RequestMethod.POST)
-    public void editData(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        String updatedName = request.getParameter("name");
-        String[] updatedSectors = request.getParameterValues("sectors");
+    public String editData(@ModelAttribute("sectorForm") @Validated SectorForm sectorForm, BindingResult bindingResult, Model model){
+
+        if(bindingResult.hasErrors()){
+            return "edit";
+        }
 
         User user = userService.getUserByName(name);
-        name = updatedName;
-        user.setName(updatedName);
+        name = sectorForm.getName();
+        user.setName(name);
         userService.saveUser(user);
 
+        List<String> sectorList = sectorForm.getSectors();
         positionService.deletePositionsByUserId(user.getId());
-        Arrays.stream(updatedSectors).forEach(sec -> positionService.addPosition(new Position(user.getId(), Integer.parseInt(sec))));
+        sectorList.stream().forEach(sector -> positionService.addPosition(new Position(user.getId(), Integer.parseInt(sector))));
 
-        Document refilledPage = getRefilledPage(user);
+        model.addAttribute("name", user.getName());
 
-        response.getWriter().println(refilledPage.html());
-    }
+        List<String> userSectors = positionService.getPositionsByUserId(user.getId()).stream()
+                .map(position -> sectorService.getSectorNameById(position.getSectorId()))
+                .collect(Collectors.toList());
+        model.addAttribute("sectors", userSectors);
 
-    private boolean validateSubmit(HttpServletRequest request) {
-        return (!request.getParameter("name").equals("")
-                && request.getParameter("terms").equals("accepted")
-                && request.getParameterValues("sectors").length != 0);
-    }
+        model.addAttribute("sectorForm", new SectorForm());
 
-    private Document getRefilledPage(User user) throws IOException {
-        Document doc = null;
-        try {
-            doc = getStartPageDocument();
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
-        }
-        Element userName = doc.getElementById("name");
-        userName.val(user.getName());
-        Elements options = doc.select("#sectors>option");
-        for (Element option : options) {
-            if (positionService.getPositionsByUserId(user.getId()).stream().anyMatch(position -> position.getSectorId() == Integer.parseInt(option.val()))) {
-                option.attr("selected", "selected");
-            }
-        }
-        Element form = doc.getElementById("submitForm");
-        form.attr("action", "editData");
-
-        Element submitButton = doc.getElementById("submitButton");
-        submitButton.attr("value", "Edit");
-
-        return doc;
+        return "edit";
     }
 
     @Override
@@ -124,8 +120,13 @@ public class SectorController implements ServletContextAware {
     }
 
         public static Document getStartPageDocument() throws IOException, URISyntaxException {
-        URL startPageStream = servletContext.getResource("/WEB-INF/views/startPage.jsp");
+        URL startPageStream = servletContext.getResource("/WEB-INF/views/index.jsp");
         File startPAge = Paths.get(startPageStream.toURI()).toFile();
         return Jsoup.parse(startPAge);
+    }
+
+    @InitBinder
+    private void initBinder(WebDataBinder binder) {
+        binder.setValidator(validator);
     }
 }

@@ -13,4 +13,5 @@ public class SectorService {
     public int getSectorIdByName(String sectorName) {
         return sectorRepository.getSectorByName(sectorName).getId();
     }
+    public String getSectorNameById(int id){ return sectorRepository.getSectorById(id).getName(); }
 }
