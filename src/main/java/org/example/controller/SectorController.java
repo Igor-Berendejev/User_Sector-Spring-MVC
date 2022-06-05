@@ -82,10 +82,10 @@ public class SectorController implements ServletContextAware {
         model.addAttribute("name", savedUser.getName());
 
         List<String> userSectors = positionService.getPositionsByUserId(savedUser.getId()).stream()
-                .map(position -> sectorService.getSectorNameById(position.getSectorId()))
+                .map(position -> String.valueOf(position.getSectorId()))
                 .collect(Collectors.toList());
-        model.addAttribute("sectors", userSectors);
 
+        userSectors.forEach(sector -> model.addAttribute("selectedCat" + sector, "selected"));
         model.addAttribute("sectorForm", new SectorForm());
 
         return "edit";
@@ -110,9 +110,10 @@ public class SectorController implements ServletContextAware {
         model.addAttribute("name", user.getName());
 
         List<String> userSectors = positionService.getPositionsByUserId(user.getId()).stream()
-                .map(position -> sectorService.getSectorNameById(position.getSectorId()))
+                .map(position -> String.valueOf(position.getSectorId()))
                 .collect(Collectors.toList());
-        model.addAttribute("sectors", userSectors);
+
+        userSectors.forEach(sector -> model.addAttribute("selectedCat" + sector, "selected"));
 
         model.addAttribute("sectorForm", new SectorForm());
 
